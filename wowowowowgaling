@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Blast for Math Wizards</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; background: #121212; color: white; }
+        h1 { color: #f39c12; }
+        .game-container { display: flex; flex-direction: column; align-items: center; margin-top: 20px; }
+        #game-board { display: grid; grid-template-columns: repeat(5, 80px); gap: 5px; }
+        .block { 
+            width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; 
+            background: linear-gradient(45deg, #3498db, #2980b9); color: white; font-size: 24px; font-weight: bold;
+            border-radius: 10px; cursor: pointer; transition: transform 0.2s, background 0.3s;
+        }
+        .block:hover { transform: scale(1.1); background: linear-gradient(45deg, #e74c3c, #c0392b); }
+        .explode {
+            animation: explodeEffect 0.5s ease-out;
+        }
+        @keyframes explodeEffect {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(2); opacity: 0.7; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+        #question { font-size: 20px; margin: 20px 0; color: #27ae60; font-weight: bold; }
+        #score { font-size: 22px; color: #f1c40f; font-weight: bold; }
+        .jumpscare {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            width: 80vw;
+            height: 80vh;
+            z-index: 9999;
+        }
+    </style>
+</head>
++
+<body>
+    <h1>Block Blast for Math Wizards</h1>
+    <audio id="bg-music" loop autoplay>
+        <source src="scary-music.mp3" type="audio/mpeg">
+    </audio>
+    <div class="game-container">
+        <p id="question">Solve the equation to blast a block!</p>
+        <div id="game-board"></div>
+        <p id="score">Score: 0</p>
+        <img id="jumpscare" class="jumpscare" src="https://tse4.mm.bing.net/th?id=OIP.3pRWinw62BaHVB5uvvPkdgHaHa&pid=Api" alt="Jumpscare">
+    </div>
+    <audio id="jumpscare-sound">
+        <source src="jumpscare-sound.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script>
+        const boardSize = 5;
+        const board = document.getElementById("game-board");
+        const questionElement = document.getElementById("question");
+        const scoreElement = document.getElementById("score");
+        const jumpscareImg = document.getElementById("jumpscare");
+        const jumpscareSound = document.getElementById("jumpscare-sound");
+        let score = 0;
+        let inactivityTimer;
+
+        function generateRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateBlocks() {
+            board.innerHTML = "";
+            for (let i = 0; i < boardSize * boardSize; i++) {
+                let num1 = generateRandomNumber(1, 10);
+                let num2 = generateRandomNumber(1, 10);
+                let operators = ['+', '-', '*', '/'];
+                let operator = operators[Math.floor(Math.random() * operators.length)];
+                let answer = eval(`${num1} ${operator} ${num2}`);
+                let block = document.createElement("div");
+                block.classList.add("block");
+                block.textContent = Math.round(answer * 100) / 100;
+                block.dataset.answer = block.textContent;
+                block.dataset.num1 = num1;
+                block.dataset.num2 = num2;
+                block.dataset.operator = operator;
+                block.onclick = () => checkAnswer(block);
+                board.appendChild(block);
+            }
+            generateQuestion();
+            resetInactivityTimer();
+        }
+
+        function generateQuestion() {
+            let blocks = document.querySelectorAll(".block");
+            let randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
+            let num1 = randomBlock.dataset.num1;
+            let num2 = randomBlock.dataset.num2;
+            let operator = randomBlock.dataset.operator;
+            questionElement.textContent = `Solve: ${num1} ${operator} ${num2}`;
+            questionElement.dataset.correctAnswer = randomBlock.dataset.answer;
+        }
+
+        function checkAnswer(block) {
+            if (block.dataset.answer === questionElement.dataset.correctAnswer) {
+                triggerExplosion(block);
+                score += 10;
+                scoreElement.textContent = `Score: ${score}`;
+                generateQuestion();
+                resetInactivityTimer();
+            }
+        }
+
+        function triggerExplosion(block) {
+            block.classList.add("explode");
+            setTimeout(() => block.remove(), 500);
+            showJumpscare();
+        }
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => explodeBlock(), 5000);
+        }
+
+        function explodeBlock() {
+            let blocks = document.querySelectorAll(".block");
+            if (blocks.length > 0) {
+                let randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
+                triggerExplosion(randomBlock);
+                score -= 5;
+                scoreElement.textContent = `Score: ${score}`;
+                generateQuestion();
+                resetInactivityTimer();
+            }
+        }
+
+        function showJumpscare() {
+            jumpscareImg.style.display = "block";
+            jumpscareSound.play();
+            setTimeout(() => jumpscareImg.style.display = "none", 1500);
+        }
+
+        document.addEventListener("click", resetInactivityTimer);
+        document.addEventListener("mousemove", resetInactivityTimer);
+        document.addEventListener("keydown", resetInactivityTimer);
+
+        generateBlocks();
+    </script>
+</body>
+</html>
